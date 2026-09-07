@@ -1,0 +1,5 @@
+# Copia este archivo como "config.local.properties" (misma carpeta) y completa tus datos.
+# config.local.properties esta en .gitignore: NO se sube al repositorio.
+
+ces.username=TU_USUARIO
+ces.password=TU_CONTRASENA

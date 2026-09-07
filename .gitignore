@@ -1,0 +1,18 @@
+target/
+*.class
+*.log
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# SO
+.DS_Store
+
+# Credenciales locales (NO subir)
+config.local.properties
+.env
