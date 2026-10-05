@@ -3,8 +3,8 @@
 Pruebas básicas con **Selenium WebDriver 4** y **JUnit 5**, integradas con **Maven**.
 Tarea de familiarización con Selenium WebDriver (CES).
 
-Los datos de las pruebas (usuario, contraseña, URLs, términos de búsqueda, modo headless)
-se toman de variables; no están fijos en el código.
+Las pruebas están **parametrizadas**: los datos de entrada viven en CSV y la configuración
+del entorno en `config.properties`; no hay valores fijos en el código (ver *Parametrización*).
 
 ## Pruebas
 
@@ -45,17 +45,33 @@ Para la Parte B las credenciales también pueden ir en variables de entorno
 (ver `config.local.properties.example`; ese archivo está en `.gitignore`).
 Si no hay credenciales, `CapacitacionCesTest` se omite.
 
-## Variables
+## Parametrización
+
+Los datos se separaron en dos tipos de archivo:
+
+**1. Datos de prueba → CSV** (`src/test/resources/datos/`, leídos con `@ParameterizedTest` + `@CsvFileSource`).
+Cada fila es una ejecución independiente de la misma prueba.
+
+| Archivo | Prueba | Columnas |
+|---------|--------|----------|
+| `busquedas_google.csv` | `GoogleSearchTest` | `termino`, `palabraEnResultados` |
+| `articulos_wikipedia.csv` | `WikipediaSearchTest` | `articulo`, `textoEnContenido` |
+| `busquedas_foros_ces.csv` | `CapacitacionCesTest` | `textoBusqueda`, `raizEsperada` |
+
+**2. Configuración y entorno → `config.properties`** (leída con `support.Config`, que además
+permite sobreescribir con `-D` o variable de entorno).
 
 | Clave | Por defecto |
 |-------|-------------|
-| `google.url` / `google.query` | `https://www.google.com/ncr` / `Selenium WebDriver` |
-| `wikipedia.url` / `wikipedia.articulo` | `https://es.wikipedia.org/` / `Hola mundo` |
-| `ces.base.url` | `https://capacitacion.ces.com.uy` |
-| `ces.username` / `ces.password` | — (obligatorias para la Parte B) |
-| `ces.curso` | `Taller de Automatización del Testing Funcional` |
-| `ces.foro.busqueda` | `Bienvenida` |
 | `webdriver.headless` | `false` |
+| `webdriver.explicit_wait_seconds` | `15` |
+| `webdriver.lang` / `webdriver.window_size` / `webdriver.user_agent` | `es-ES` / `1920,1080` / Chrome 131 |
+| `google.url` / `google.results_wait_seconds` | `https://www.google.com/ncr` / `5` |
+| `wikipedia.url` / `wikipedia.dominio` | `https://es.wikipedia.org/` / `es.wikipedia.org` |
+| `ces.base.url` / `ces.dominio` | `https://capacitacion.ces.com.uy` / `capacitacion.ces.com.uy` |
+| `ces.login.path` / `ces.cursos.path` / `ces.inicio.path` | `/login/index.php` / `/my/courses.php` / `/my/` |
+| `ces.curso` / `ces.curso.titulo_esperado` | `Taller de Automatización del Testing Funcional` / `taller de automatiz` |
+| `ces.username` / `ces.password` | — (solo por `-D`, variable de entorno o `config.local.properties`; nunca en el repo) |
 
 ## Verificaciones
 
@@ -85,5 +101,6 @@ selenium-ces/
     │   └── parteb/    CapacitacionCesTest
     └── resources/
         ├── config.properties
-        └── config.local.properties.example
+        ├── config.local.properties.example
+        └── datos/     busquedas_google.csv, articulos_wikipedia.csv, busquedas_foros_ces.csv
 ```

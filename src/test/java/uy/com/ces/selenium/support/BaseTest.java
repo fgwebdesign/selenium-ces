@@ -27,7 +27,8 @@ import org.openqa.selenium.support.ui.WebDriverWait;
  */
 public abstract class BaseTest {
 
-    protected static final Duration ESPERA = Duration.ofSeconds(15);
+    protected static final Duration ESPERA =
+            Duration.ofSeconds(Config.getInt("webdriver.explicit_wait_seconds", 15));
 
     protected WebDriver driver;
     protected WebDriverWait wait;
@@ -36,16 +37,15 @@ public abstract class BaseTest {
     void abrirNavegador() {
         ChromeOptions opciones = new ChromeOptions();
         opciones.addArguments("--start-maximized");
-        opciones.addArguments("--lang=es-ES");
+        opciones.addArguments("--lang=" + Config.get("webdriver.lang", "es-ES"));
         opciones.addArguments("--disable-blink-features=AutomationControlled");
         opciones.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
         if (Config.getBoolean("webdriver.headless", false)) {
             opciones.addArguments("--headless=new");
-            opciones.addArguments("--window-size=1920,1080");
+            opciones.addArguments("--window-size=" + Config.get("webdriver.window_size", "1920,1080"));
             // Chrome headless envia un user-agent con "HeadlessChrome" que Google responde
             // con una pagina sin JavaScript; se fuerza el user-agent de un Chrome normal.
-            opciones.addArguments("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+            opciones.addArguments("--user-agent=" + Config.get("webdriver.user_agent", ""));
         }
 
         driver = new ChromeDriver(opciones);

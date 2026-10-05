@@ -6,7 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 import org.openqa.selenium.By;
 import org.openqa.selenium.ElementNotInteractableException;
 import org.openqa.selenium.StaleElementReferenceException;
@@ -17,22 +18,23 @@ import uy.com.ces.selenium.support.BaseTest;
 import uy.com.ces.selenium.support.Config;
 
 /**
- * Parte A - Busqueda del articulo "Hola mundo" en Wikipedia.
+ * Parte A - Busqueda de articulos en Wikipedia.
  *
  * Escribe el termino en el buscador de Wikipedia y verifica que se abre el articulo
- * correcto. El termino se toma de la variable "wikipedia.articulo".
+ * correcto. Se ejecuta una vez por cada fila de datos/articulos_wikipedia.csv.
  */
-@DisplayName("Parte A - Busqueda de 'Hola mundo' en Wikipedia")
+@DisplayName("Parte A - Busqueda de articulos en Wikipedia")
 class WikipediaSearchTest extends BaseTest {
 
     private final String url = Config.get("wikipedia.url", "https://es.wikipedia.org/");
-    private final String articulo = Config.get("wikipedia.articulo", "Hola mundo");
+    private final String dominio = Config.get("wikipedia.dominio", "es.wikipedia.org");
 
-    @Test
-    @DisplayName("Buscar 'Hola mundo' y validar que se abre el articulo")
-    void busquedaEnWikipedia() {
+    @ParameterizedTest(name = "Articulo: {0}")
+    @CsvFileSource(resources = "/datos/articulos_wikipedia.csv", numLinesToSkip = 1)
+    @DisplayName("Buscar un articulo y validar que se abre")
+    void busquedaEnWikipedia(String articulo, String textoEnContenido) {
         driver.get(url);
-        assertTrue(driver.getCurrentUrl().contains("es.wikipedia.org"),
+        assertTrue(driver.getCurrentUrl().contains(dominio),
                 "No se abrio Wikipedia en espanol. URL: " + driver.getCurrentUrl());
 
         // El buscador de Wikipedia se rehidrata al cargar (el input se reemplaza y por un
@@ -49,7 +51,7 @@ class WikipediaSearchTest extends BaseTest {
                     caja.clear();
                     caja.sendKeys(articulo);
                     String valor = caja.getDomProperty("value");
-                    if (valor != null && valor.toLowerCase().contains("hola")) {
+                    if (valor != null && valor.equalsIgnoreCase(articulo)) {
                         caja.submit();
                         return true;
                     }
@@ -73,8 +75,8 @@ class WikipediaSearchTest extends BaseTest {
                 "La URL no corresponde al articulo. URL: " + driver.getCurrentUrl());
 
         String contenido = driver.findElement(By.id("mw-content-text")).getText().toLowerCase();
-        assertTrue(contenido.contains("hola mundo"),
-                "El contenido del articulo no menciona 'Hola mundo'.");
+        assertTrue(contenido.contains(textoEnContenido),
+                "El contenido del articulo no menciona '" + textoEnContenido + "'.");
     }
 
     private static WebElement cajaVisible(List<WebElement> cajas) {

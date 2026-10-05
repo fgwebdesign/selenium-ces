@@ -7,7 +7,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.TimeoutException;
@@ -22,7 +23,8 @@ import uy.com.ces.selenium.support.Config;
  * Parte A - Busqueda en Google.
  *
  * Abre Google, escribe un termino, envia la busqueda y verifica que Google navega a su
- * pagina de resultados para ese termino. El termino se toma de la variable "google.query".
+ * pagina de resultados para ese termino. Se ejecuta una vez por cada fila de
+ * datos/busquedas_google.csv; la URL sale de config.properties ("google.url").
  *
  * Nota: Google detecta clientes automatizados y a veces (sobre todo en headless) devuelve
  * una pagina de resultados degradada sin el listado. Por eso las comprobaciones firmes son
@@ -35,11 +37,12 @@ class GoogleSearchTest extends BaseTest {
     private static final By RESULTADOS = By.cssSelector("#search h3, #rso h3");
 
     private final String url = Config.get("google.url", "https://www.google.com/ncr");
-    private final String termino = Config.get("google.query", "Selenium WebDriver");
+    private final int esperaListado = Config.getInt("google.results_wait_seconds", 5);
 
-    @Test
+    @ParameterizedTest(name = "Busqueda de: {0}")
+    @CsvFileSource(resources = "/datos/busquedas_google.csv", numLinesToSkip = 1)
     @DisplayName("Buscar un termino y validar la pagina de resultados")
-    void busquedaEnGoogle() {
+    void busquedaEnGoogle(String termino, String palabraEnResultados) {
         driver.get(url);
         assertTrue(driver.getCurrentUrl().contains("google."),
                 "No se abrio Google. URL: " + driver.getCurrentUrl());
@@ -78,14 +81,13 @@ class GoogleSearchTest extends BaseTest {
                     + "(deteccion de automatizacion); se valido la busqueda por la URL.");
             return;
         }
-        String primeraPalabra = termino.split("\\s+")[0].toLowerCase();
-        assertTrue(titulos.stream().anyMatch(t -> t.getText().toLowerCase().contains(primeraPalabra)),
-                "Ningun resultado menciona '" + primeraPalabra + "'.");
+        assertTrue(titulos.stream().anyMatch(t -> t.getText().toLowerCase().contains(palabraEnResultados)),
+                "Ningun resultado menciona '" + palabraEnResultados + "'.");
     }
 
     private List<WebElement> listadoDeResultados() {
         try {
-            new WebDriverWait(driver, Duration.ofSeconds(5))
+            new WebDriverWait(driver, Duration.ofSeconds(esperaListado))
                     .until(ExpectedConditions.presenceOfElementLocated(RESULTADOS));
         } catch (TimeoutException sinListado) {
             return List.of();

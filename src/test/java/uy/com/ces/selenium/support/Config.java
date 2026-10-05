@@ -43,6 +43,15 @@ public final class Config {
         return Boolean.parseBoolean(get(clave, String.valueOf(porDefecto)));
     }
 
+    public static int getInt(String clave, int porDefecto) {
+        String valor = get(clave, String.valueOf(porDefecto));
+        try {
+            return Integer.parseInt(valor);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("La propiedad " + clave + " debe ser un entero: " + valor, e);
+        }
+    }
+
     private static void cargar(String recurso) {
         try (InputStream in = Config.class.getClassLoader().getResourceAsStream(recurso)) {
             if (in == null) {

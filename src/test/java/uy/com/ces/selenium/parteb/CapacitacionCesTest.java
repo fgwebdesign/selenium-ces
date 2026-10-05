@@ -7,7 +7,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.TimeoutException;
@@ -27,7 +28,7 @@ import uy.com.ces.selenium.support.Config;
  *   5. Buscar "Bienvenida" en "Buscar en los foros" y validar que aparece el foro de bienvenida
  *
  * El usuario y la contrasena se pasan por variable (ces.username / ces.password); si no
- * estan definidos la prueba se omite.
+ * estan definidos la prueba se omite. Los textos a buscar salen de datos/busquedas_foros_ces.csv.
  */
 @DisplayName("Parte B - Guion completo capacitacion CES")
 class CapacitacionCesTest extends BaseTest {
@@ -37,11 +38,17 @@ class CapacitacionCesTest extends BaseTest {
     private final String clave = Config.get("ces.password", "");
     private final String nombreCurso =
             Config.get("ces.curso", "Taller de Automatización del Testing Funcional");
-    private final String textoBusqueda = Config.get("ces.foro.busqueda", "Bienvenida");
+    private final String dominio = Config.get("ces.dominio", "capacitacion.ces.com.uy");
+    private final String rutaLogin = Config.get("ces.login.path", "/login/index.php");
+    private final String rutaCursos = Config.get("ces.cursos.path", "/my/courses.php");
+    private final String rutaInicio = Config.get("ces.inicio.path", "/my/");
+    private final String tituloCursoEsperado =
+            Config.get("ces.curso.titulo_esperado", "taller de automatiz");
 
-    @Test
-    @DisplayName("Login, curso, Foros y busqueda de 'Bienvenida'")
-    void guionCompleto() {
+    @ParameterizedTest(name = "Busqueda en foros: {0}")
+    @CsvFileSource(resources = "/datos/busquedas_foros_ces.csv", numLinesToSkip = 1)
+    @DisplayName("Login, curso, Foros y busqueda en los foros")
+    void guionCompleto(String textoBusqueda, String raizEsperada) {
         Assumptions.assumeFalse(usuario.isEmpty() || clave.isEmpty(),
                 "Parte B omitida: definir ces.username y ces.password (por -D, variable de entorno "
                 + "CES_USERNAME/CES_PASSWORD o config.local.properties).");
@@ -50,24 +57,24 @@ class CapacitacionCesTest extends BaseTest {
         iniciarSesion();
         abrirCurso();
         abrirForos();
-        buscarForoDeBienvenida();
+        buscarEnForos(textoBusqueda, raizEsperada);
     }
 
     private void accederAlSitio() {
         driver.get(baseUrl);
-        assertTrue(driver.getCurrentUrl().contains("capacitacion.ces.com.uy"),
+        assertTrue(driver.getCurrentUrl().contains(dominio),
                 "No se pudo acceder al sitio. URL: " + driver.getCurrentUrl());
     }
 
     private void iniciarSesion() {
-        driver.get(baseUrl + "/login/index.php");
+        driver.get(baseUrl + rutaLogin);
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("username"))).sendKeys(usuario);
         driver.findElement(By.id("password")).sendKeys(clave);
         driver.findElement(By.id("loginbtn")).click();
 
         assertTrue(driver.findElements(By.cssSelector(".loginerrors, #loginerrormessage")).isEmpty(),
                 "El login fallo: revisar usuario y contrasena.");
-        wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/login/index.php")));
+        wait.until(ExpectedConditions.not(ExpectedConditions.urlContains(rutaLogin)));
     }
 
     private void abrirCurso() {
@@ -78,17 +85,17 @@ class CapacitacionCesTest extends BaseTest {
                 + " 'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÑ', 'abcdefghijklmnopqrstuvwxyzáéíóúñ'),"
                 + " '" + nombreCurso.toLowerCase() + "')]");
 
-        driver.get(baseUrl + "/my/courses.php");
+        driver.get(baseUrl + rutaCursos);
         try {
             wait.until(ExpectedConditions.elementToBeClickable(enlaceCurso)).click();
         } catch (TimeoutException sinCurso) {
-            driver.get(baseUrl + "/my/");
+            driver.get(baseUrl + rutaInicio);
             wait.until(ExpectedConditions.elementToBeClickable(enlaceCurso)).click();
         }
 
         WebElement titulo = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector("#page-header h1, .page-header-headings h1, h1")));
-        assertTrue(titulo.getText().toLowerCase().contains("taller de automatiz"),
+        assertTrue(titulo.getText().toLowerCase().contains(tituloCursoEsperado),
                 "No se abrio el curso esperado. Titulo: " + titulo.getText());
         assertTrue(driver.getCurrentUrl().contains("/course/view.php"),
                 "La URL no es la de un curso. URL: " + driver.getCurrentUrl());
@@ -115,7 +122,7 @@ class CapacitacionCesTest extends BaseTest {
                 By.cssSelector("input[name='search'], input[placeholder*='foros']")));
     }
 
-    private void buscarForoDeBienvenida() {
+    private void buscarEnForos(String textoBusqueda, String raizEsperada) {
         WebElement campo = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.cssSelector("input[name='search'], input[placeholder*='foros']")));
         campo.sendKeys(textoBusqueda);
@@ -129,11 +136,11 @@ class CapacitacionCesTest extends BaseTest {
         assertFalse(resultados.isEmpty(),
                 "La busqueda de '" + textoBusqueda + "' no devolvio resultados en los foros.");
 
-        // Los debates de bienvenida del curso se titulan "¡Bienvenid@s al curso!" /
-        // "Bienvenidos/as al curso!", por eso se compara contra la raiz "bienvenid".
-        boolean hayBienvenida = resultados.stream()
-                .anyMatch(a -> a.getText().toLowerCase().contains("bienvenid"));
-        assertTrue(hayBienvenida,
-                "No aparece ningun foro/debate de bienvenida en los resultados.");
+        // Se compara contra una raiz (p. ej. "bienvenid") porque los debates del curso se
+        // titulan "¡Bienvenid@s al curso!" / "Bienvenidos/as al curso!".
+        boolean hayCoincidencia = resultados.stream()
+                .anyMatch(a -> a.getText().toLowerCase().contains(raizEsperada));
+        assertTrue(hayCoincidencia,
+                "No aparece ningun resultado con '" + raizEsperada + "' al buscar '" + textoBusqueda + "'.");
     }
 }
