@@ -1,5 +1,7 @@
 # selenium-ces
 
+> **Actividad "Parametrizar pruebas":** ver [`automation-framework/`](automation-framework/README.md) (plataforma `tatf` con login de Swag Labs parametrizado con CSV y `config.properties`). Las pruebas de Google/Wikipedia/CES de este directorio también están parametrizadas (ver más abajo).
+
 Pruebas básicas con **Selenium WebDriver 4** y **JUnit 5**, integradas con **Maven**.
 Tarea de familiarización con Selenium WebDriver (CES).
 

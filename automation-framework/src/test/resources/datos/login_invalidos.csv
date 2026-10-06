@@ -1,0 +1,4 @@
+usuario,clave,mensajeError
+locked_out_user,secret_sauce,"Epic sadface: Sorry, this user has been locked out."
+standard_user,clave_incorrecta,Epic sadface: Username and password do not match any user in this service
+usuario_inexistente,secret_sauce,Epic sadface: Username and password do not match any user in this service
